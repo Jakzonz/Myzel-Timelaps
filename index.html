@@ -1,37 +1,4 @@
-<?php
-if ( isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] === '/manifest.json' ) {
-    header('Content-Type: application/json');
-    echo json_encode([
-        "name" => "Myzel Timelapse Rechner",
-        "short_name" => "Timelapse",
-        "start_url" => ".",
-        "display" => "standalone",
-        "background_color" => "#1a1a2e",
-        "theme_color" => "#4361ee",
-        "icons" => [
-            [
-                "src" => "icon-192.png",
-                "sizes" => "192x192",
-                "type" => "image/png"
-            ],
-            [
-                "src" => "icon-512.png",
-                "sizes" => "512x512",
-                "type" => "image/png"
-            ]
-        ]
-    ]);
-    exit;
-}
-
-if ( isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] === '/sw.js' ) {
-    header('Content-Type: application/javascript');
-    echo "self.addEventListener('install', e => self.skipWaiting());\n";
-    echo "self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promise.all(k.map(c => caches.delete(c)))));\n";
-    echo "self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));\n";
-    exit;
-}
-?><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -154,10 +121,6 @@ if ( isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] === '/sw.js' ) {
             -webkit-appearance: none;
             appearance: none;
         }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(67, 97, 238, 0.4);
-        }
         button:active {
             transform: translateY(0) scale(0.98);
         }
@@ -174,19 +137,12 @@ if ( isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] === '/sw.js' ) {
             animation: slideIn 0.3s ease;
         }
         @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .result-number {
             font-size: 2.5rem;
             font-weight: 700;
-            margin-bottom: 5px;
         }
         .result-label {
             font-size: 1rem;
@@ -197,14 +153,12 @@ if ( isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] === '/sw.js' ) {
             padding-top: 12px;
             border-top: 1px solid rgba(255,255,255,0.3);
             font-size: 0.9rem;
-            opacity: 0.85;
         }
         .result-counter {
             margin-top: 10px;
             padding-top: 10px;
             border-top: 1px solid rgba(255,255,255,0.3);
             font-size: 0.9rem;
-            opacity: 0.9;
         }
     </style>
 </head>
@@ -250,10 +204,6 @@ if ( isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] === '/sw.js' ) {
     <script>
         const startDatum = '2026-04-23T13:19';
         document.getElementById('startzeit').value = startDatum;
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
 
         function setDefaultAktuell() {
             const now = new Date();
