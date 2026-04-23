@@ -1,0 +1,306 @@
+<?php
+if ( isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] === '/manifest.json' ) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        "name" => "Myzel Timelapse Rechner",
+        "short_name" => "Timelapse",
+        "start_url" => ".",
+        "display" => "standalone",
+        "background_color" => "#1a1a2e",
+        "theme_color" => "#4361ee",
+        "icons" => [
+            [
+                "src" => "icon-192.png",
+                "sizes" => "192x192",
+                "type" => "image/png"
+            ],
+            [
+                "src" => "icon-512.png",
+                "sizes" => "512x512",
+                "type" => "image/png"
+            ]
+        ]
+    ]);
+    exit;
+}
+
+if ( isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] === '/sw.js' ) {
+    header('Content-Type: application/javascript');
+    echo "self.addEventListener('install', e => self.skipWaiting());\n";
+    echo "self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promise.all(k.map(c => caches.delete(c)))));\n";
+    echo "self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));\n";
+    exit;
+}
+?><!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#4361ee">
+    <link rel="manifest" href="manifest.json">
+    <title>Myzel Timelapse Rechner</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            height: 100%;
+            height: 100dvh;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            padding-top: env(safe-area-inset-top, 20px);
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            padding-left: env(safe-area-inset-left, 20px);
+            padding-right: env(safe-area-inset-right, 20px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            -webkit-overflow-scrolling: touch;
+        }
+        .container {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px 20px;
+            width: 100%;
+            max-width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin: 10px;
+        }
+        h1 {
+            text-align: center;
+            color: #1a1a2e;
+            margin-bottom: 24px;
+            font-size: 1.5rem;
+        }
+        .section {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 15px;
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #444;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input[type="datetime-local"],
+        input[type="number"] {
+            width: 100%;
+            padding: 14px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background: #fff;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        input[type="datetime-local"] {
+            min-height: 48px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4361ee;
+        }
+        input:disabled {
+            background: #e9ecef;
+            color: #495057;
+            border-color: #ced4da;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        .row > * {
+            flex: 1;
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(67, 97, 238, 0.4);
+        }
+        button:active {
+            transform: translateY(0) scale(0.98);
+        }
+        #ergebnis {
+            background: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+        }
+        #ergebnis.visible {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .result-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .result-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        .result-details {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            font-size: 0.9rem;
+            opacity: 0.85;
+        }
+        .result-counter {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Myzel Timelapse Rechner</h1>
+        
+        <div class="section">
+            <div class="section-title">Timelapse Start (fest)</div>
+            <div class="form-group">
+                <label>Startzeit & Datum</label>
+                <input type="datetime-local" id="startzeit" disabled>
+            </div>
+            <div class="row">
+                <div class="form-group">
+                    <label>Intervall (Minuten)</label>
+                    <input type="number" id="intervallMin" min="0" value="20">
+                </div>
+                <div class="form-group">
+                    <label>Intervall (Sekunden)</label>
+                    <input type="number" id="intervallSek" min="0" value="10">
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Aktuelle Zeit</div>
+            <div class="form-group">
+                <label>Jetzige Uhrzeit & Datum</label>
+                <input type="datetime-local" id="aktuell">
+            </div>
+            <button onclick="berechne()">Nächstes Bild berechnen</button>
+        </div>
+
+        <div id="ergebnis">
+            <div class="result-number" id="minuten"></div>
+            <div class="result-label">Minuten bis zum nächsten Bild</div>
+            <div class="result-details" id="details"></div>
+            <div class="result-counter" id="bilderTotal"></div>
+        </div>
+    </div>
+
+    <script>
+        const startDatum = '2026-04-23T13:19';
+        document.getElementById('startzeit').value = startDatum;
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        function setDefaultAktuell() {
+            const now = new Date();
+            const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            const iso = local.toISOString().slice(0, 16);
+            document.getElementById('aktuell').value = iso;
+        }
+        setDefaultAktuell();
+
+        function berechne() {
+            const startVal = document.getElementById('startzeit').value;
+            const aktuellVal = document.getElementById('aktuell').value;
+            const minuten = parseInt(document.getElementById('intervallMin').value) || 0;
+            const sekunden = parseInt(document.getElementById('intervallSek').value) || 0;
+
+            if (!startVal || !aktuellVal) {
+                alert('Bitte alle Felder korrekt ausfüllen.');
+                return;
+            }
+
+            const start = new Date(startVal);
+            const aktuell = new Date(aktuellVal);
+
+            if (aktuell < start) {
+                alert('Die aktuelle Zeit muss nach dem Startzeitpunkt liegen.');
+                return;
+            }
+
+            const intervalMs = (minuten * 60000) + (sekunden * 1000);
+            const vergangenMs = aktuell.getTime() - start.getTime();
+            const bilderSeitStart = Math.floor(vergangenMs / intervalMs);
+            const naechstesBildMs = start.getTime() + (bilderSeitStart + 1) * intervalMs;
+            const naechstesBild = new Date(naechstesBildMs);
+
+            const minutenBisBild = Math.round((naechstesBildMs - aktuell.getTime()) / 60000);
+
+            document.getElementById('minuten').textContent = minutenBisBild;
+            document.getElementById('details').textContent = 
+                'Nächstes Bild um ' + 
+                naechstesBild.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) + 
+                ' Uhr am ' + 
+                naechstesBild.toLocaleDateString('de-DE');
+            document.getElementById('bilderTotal').textContent = 
+                'Bisher gemacht: ' + (bilderSeitStart + 1) + ' Bilder';
+
+            document.getElementById('ergebnis').classList.add('visible');
+        }
+    </script>
+</body>
+</html>
